@@ -36,3 +36,6 @@
 ## 0.5.2
 - mostly just upversioning orm_loader base
 - added table_has_rows convenience function
+
+## 0.5.3
+- upversioning orm_loader dependency to handle date parse updates for non-onco-branch vocab files
