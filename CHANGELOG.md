@@ -39,3 +39,6 @@
 
 ## 0.5.3
 - upversioning orm_loader dependency to handle date parse updates for non-onco-branch vocab files
+
+## 0.5.4
+- modificationof PK for concept_synonym table
