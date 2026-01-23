@@ -4,9 +4,7 @@ from sqlalchemy.orm import DeclarativeMeta, Mapper
 from datetime import date
 
 if TYPE_CHECKING:
-    from omop_alchemy.cdm.base import ExpectedDomain
-    from omop_alchemy.cdm.registry import DomainRule
-
+    from omop_alchemy.cdm.base import ExpectedDomain, DomainRule
 
 @runtime_checkable
 class HasConceptId(Protocol):

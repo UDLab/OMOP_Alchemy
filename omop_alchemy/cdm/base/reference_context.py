@@ -8,11 +8,29 @@ from sqlalchemy.ext.declarative import declared_attr
 class ReferenceContext:
 
     """
-    Helper for defining read-only reference relationships.
+    `ReferenceContext` 
+    
+    A helper base class for defining **read-only reference relationships**.
 
     This class is purely structural: it resolves foreign keys
     into reference tables (Domain, Vocabulary, ConceptClass, etc.)
     with explicit join conditions.
+
+    
+    These relationships are:
+
+    - `viewonly=True`
+    - explicitly joined
+    - resolved lazily using `selectin`
+    - defined outside the core table
+
+    They are intended for:
+
+    - inspection
+    - analytics
+    - debugging
+    - view-level navigation
+    — **not** for ETL or mutation.
     """
 
     @classmethod
