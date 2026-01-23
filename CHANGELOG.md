@@ -42,3 +42,8 @@
 
 ## 0.5.4
 - modificationof PK for concept_synonym table
+
+## 0.5.5
+- created some tests
+- upversion orm_loader
+- episode event convenience function

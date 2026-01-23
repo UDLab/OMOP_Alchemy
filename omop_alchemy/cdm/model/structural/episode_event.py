@@ -84,3 +84,16 @@ class Episode_EventView(Episode_Event, Episode_EventContext, DomainValidationMix
             if self.episode else None
         )
     
+    @property
+    def resolved_event_id_column(self) -> str | None:
+        """
+        Name of the ID column on the resolved event table.
+
+        Derived from episode_event_field_concept_id metadata.
+        
+        Example:
+            'condition_occurrence.condition_occurrence_id' resolves to 'condition_occurrence_id'
+        """
+        if self.event_field and "." in self.event_field.concept_name:
+            return self.event_field.concept_name.split(".", 1)[1]
+        return None
