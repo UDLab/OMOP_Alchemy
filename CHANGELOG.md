@@ -47,3 +47,6 @@
 - created some tests
 - upversion orm_loader
 - episode event convenience function
+
+## 0.5.6
+- added ConceptValidationMixin for both view and table mapped classes

@@ -1,6 +1,6 @@
 
-from typing import Protocol, ClassVar, runtime_checkable, TYPE_CHECKING, Optional
-from sqlalchemy.orm import DeclarativeMeta, Mapper
+from typing import Protocol, ClassVar, runtime_checkable, TYPE_CHECKING, Optional, Iterable
+from sqlalchemy.orm import DeclarativeMeta
 from datetime import date
 
 if TYPE_CHECKING:
@@ -41,3 +41,8 @@ class ClinicalEvent(Protocol):
 
     visit_occurrence_id: Optional[int]
     visit_detail_id: Optional[int]
+
+
+
+class ConceptResolver(Protocol):
+    def are_standard(self, concept_ids: Iterable[int]) -> dict[int, bool]:...
