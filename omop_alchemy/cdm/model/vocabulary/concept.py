@@ -25,11 +25,11 @@ class Concept(
     domain_id: so.Mapped[str] = so.mapped_column(sa.ForeignKey("domain.domain_id"), nullable=False, index=True)
     vocabulary_id: so.Mapped[str] = so.mapped_column(sa.ForeignKey("vocabulary.vocabulary_id"), nullable=False, index=True)
     concept_class_id: so.Mapped[str] = so.mapped_column(sa.ForeignKey("concept_class.concept_class_id"), nullable=False, index=True)
-    standard_concept: so.Mapped[Optional[str]] = so.mapped_column(sa.String(1))
+    standard_concept: so.Mapped[Optional[str]] = so.mapped_column(sa.String(1), nullable=True)
     concept_code: so.Mapped[str] = so.mapped_column(sa.String(50), nullable=False)
     valid_start_date: so.Mapped[date] = so.mapped_column(sa.Date(), nullable=False)
     valid_end_date: so.Mapped[date] = so.mapped_column(sa.Date(), nullable=False)
-    invalid_reason: so.Mapped[Optional[str]] = so.mapped_column(sa.String(1))
+    invalid_reason: so.Mapped[Optional[str]] = so.mapped_column(sa.String(1), nullable=True)
 
 class ConceptContext(ReferenceContext):
     """

@@ -41,7 +41,7 @@
 - upversioning orm_loader dependency to handle date parse updates for non-onco-branch vocab files
 
 ## 0.5.4
-- modificationof PK for concept_synonym table
+- modification of PK for concept_synonym table
 
 ## 0.5.5
 - created some tests
@@ -50,3 +50,6 @@
 
 ## 0.5.6
 - added ConceptValidationMixin for both view and table mapped classes
+
+## 0.5.7
+- nullability in concept table

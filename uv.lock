@@ -853,7 +853,7 @@ wheels = [
 
 [[package]]
 name = "omop-alchemy"
-version = "0.5.5"
+version = "0.5.7"
 source = { editable = "." }
 dependencies = [
     { name = "orm-loader" },
@@ -890,7 +890,7 @@ requires-dist = [
     { name = "mkdocstrings-python", marker = "extra == 'dev'", specifier = ">=2.0.1" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8" },
     { name = "myst-parser", marker = "extra == 'docs'" },
-    { name = "orm-loader", specifier = ">=0.3.9" },
+    { name = "orm-loader", specifier = ">=0.3.14" },
     { name = "pandas", specifier = ">=2.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0" },
@@ -905,7 +905,7 @@ provides-extras = ["dev", "docs"]
 
 [[package]]
 name = "orm-loader"
-version = "0.3.9"
+version = "0.3.14"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "chardet" },
@@ -913,9 +913,9 @@ dependencies = [
     { name = "pyarrow" },
     { name = "sqlalchemy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d5/3b/a499ab6497a78be8e0a42303cb0eeb24351253fd7ea24adec61b74d5d470/orm_loader-0.3.9.tar.gz", hash = "sha256:f632160fae2970ae46a8780dbce352537e1c0c4b562ba613cea4a846212ff716", size = 27467, upload-time = "2026-01-23T06:35:39.048Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/75/47/5c071dc9e38234f8b34dc8ef723bffba19ee86ac46431dd8a02299d73442/orm_loader-0.3.14.tar.gz", hash = "sha256:40012e91e31a6d168db4f432eed0506e0d3ffa1c1d810cf560ccd615aa3912da", size = 30023, upload-time = "2026-02-06T00:42:00.334Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7d/89/1800007fcc8c734095d31788e315d0aeb919a1501c9cec7687c9b2e5d69f/orm_loader-0.3.9-py3-none-any.whl", hash = "sha256:80e6a3f49bc448acbf74d65e3c0c256bcd6c64f6621110548cabe106ee119c9e", size = 38169, upload-time = "2026-01-23T06:35:38.048Z" },
+    { url = "https://files.pythonhosted.org/packages/3d/64/edbc2d86d9b5d1b020b93c83bb4525734e52d8cbf468caac7381473e7867/orm_loader-0.3.14-py3-none-any.whl", hash = "sha256:68887ff074613e5529f121240758c5fb6b00941ec24259cbe6df8d4deca8a392", size = 41364, upload-time = "2026-02-06T00:41:59.194Z" },
 ]
 
 [[package]]

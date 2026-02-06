@@ -162,8 +162,6 @@ class ConceptValidationMixin:
         return stmt
 
 
-
-
     @classmethod
     def referenced_concept_violations(
         cls,
