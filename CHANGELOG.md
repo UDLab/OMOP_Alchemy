@@ -53,3 +53,6 @@
 
 ## 0.5.7
 - nullability in concept table
+
+## 0.5.8
+- moved complex mappers out of model module to stand alone
