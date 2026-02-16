@@ -853,7 +853,7 @@ wheels = [
 
 [[package]]
 name = "omop-alchemy"
-version = "0.5.8"
+version = "0.5.9"
 source = { editable = "." }
 dependencies = [
     { name = "orm-loader" },

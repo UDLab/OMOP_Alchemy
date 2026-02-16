@@ -8,6 +8,8 @@ from .structural import Episode, Episode_Event, Fact_Relationship
 from .unstructured import Note, Note_NLP
 from .metadata import CDM_Source, Metadata
 
+from .typing import ConceptRow
+
 __all__ = [
     "Person",
     "Condition_Occurrence",
@@ -44,4 +46,5 @@ __all__ = [
     "Note_NLP",
     "CDM_Source",
     "Metadata",
+    "ConceptRow",
 ]

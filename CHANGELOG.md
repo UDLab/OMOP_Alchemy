@@ -56,3 +56,7 @@
 
 ## 0.5.8
 - moved complex mappers out of model module to stand alone
+
+## 0.5.9
+- refactoring vocabulary mapping lookups
+- added typers for cdm type hinting

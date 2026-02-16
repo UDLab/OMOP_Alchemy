@@ -1,29 +1,153 @@
-from typing import Protocol, Iterable, Optional
+from typing import Iterable, Callable
 from dataclasses import dataclass
-from typing import Callable
-from collections import defaultdict
 import sqlalchemy as sa
 import sqlalchemy.orm as so
-from .typing import ConceptRow, LookupIndex, LookupSpec, Normaliser
-from .vocab_helpers import normalize_default, compose_normalizers
-from ...model.vocabulary import Concept, Concept_Synonym, Concept_Relationship, Concept_Ancestor
 
+from .concept_normalisers import normalize_default
+from ...model import ConceptRow
+from ...model.vocabulary import Concept, Concept_Synonym, Concept_Ancestor
 
-# this is somewhat redunant with some of omop-graph but 
-# mutual dependency is awkward and this is a very thin layer so 
-# it's not worth over-engineering the separation at this stage
+"""
+Class definitions for vocabulary handling and mapping.
+
+This is somewhat redunant with some of omop-graph but 
+mutual dependency is awkward and this is a thin layer so 
+it's not worth over-engineering separation at this stage.
+"""
+
+Normaliser = Callable[[str], str]
+
+@dataclass(frozen=True)
+class LookupIndex:
+    """
+    Materialised lookup table from normalised text keys to OMOP concept IDs.
+
+    A LookupIndex is the *runtime artifact* produced by a LookupSpec and a
+    ConceptSource. It represents a flat, precomputed mapping from one or more
+    normalised string representations (e.g. concept names, codes, synonyms)
+    to OMOP concept IDs.
+
+    Attributes
+    ----------
+    name:
+        Human-readable identifier for the lookup.
+    unknown:
+        Concept ID to return when a lookup fails, or None if failures should
+        propagate as null.
+    mapping:
+        Dictionary mapping normalised string keys to OMOP concept IDs.
+        Keys are expected to already be normalised at build time.
+
+    Notes
+    -----
+    The mapping may contain multiple textual representations pointing to the
+    same concept ID (e.g. name + code + synonym). 
+    """
+    name: str
+    unknown: int | None
+    mapping: dict[str, int]
+
+    def lookup(self, term: str | None) -> int | None:
+        if term is None:
+            term = ""
+        return self.mapping.get(term, self.unknown)
+
+    def __contains__(self, item: str | int) -> bool:
+        if isinstance(item, str):
+            return item in self.mapping
+        if isinstance(item, int):
+            return item in self.mapping.values()
+        return False
+
+    @property
+    def all_concepts(self) -> set[int]:
+        return set(self.mapping.values())
+    
+
+@dataclass(frozen=True)
+class LookupSpec:
+    """
+    Declarative specification for constructing a vocabulary lookup index.
+
+    A LookupSpec defines *what* concepts should be included in a lookup and
+    *which textual representations* should be indexed for resolution.
+
+    The spec is consumed by a OMOPConceptSource, which materialises a LookupIndex
+    by querying an OMOP vocabulary source and extracting the requested fields.
+
+    This separation allows lookup semantics (domain, vocabulary, hierarchy,
+    standardness, synonyms, normalisation) to be expressed explicitly and
+    versioned independently of runtime resolution logic.
+
+    Attributes
+    ----------
+    name:
+        Stable identifier for this lookup specification. 
+    unknown:
+        Concept ID to return for unmatched terms. Set to None to preserve
+        nulls, or to a sentinel concept ID to force closed-world behaviour.
+    domain_id:
+        Optional OMOP domain filter 
+    concept_class_id:
+        Optional list of OMOP concept_class_id values to restrict the lookup
+    vocabulary_id:
+        Optional list of OMOP vocabulary_id values to restrict the lookup
+    standard_only:
+        If True, restricts the lookup to standard concepts only.
+    code_filter:
+        Optional substring filter applied to concept_code (ILIKE-based).
+        Useful for coarse scoping (e.g. AJCC-only codes).
+    parents:
+        Optional list of ancestor concept IDs from which to expand the lookup
+        via the Concept_Ancestor table.
+    include_non_standard_descendants:
+        If True, includes non-standard concepts when expanding from parents.
+        Has no effect if parents is None.
+    include_synonyms:
+        If True, include Concept_Synonym entries in the lookup keys.
+    normalizer:
+        Function applied to all indexed strings at build time. This should
+        match (or be compatible with) the normalisation used at resolution
+        time by ConceptResolver.
+    include:
+        Tuple of ConceptRow attribute names to index as keys (e.g.
+        ("concept_name", "concept_code")). This controls which textual fields
+        become resolvable inputs.
+
+    Notes
+    -----
+    - LookupSpec encodes *semantic intent*; LookupIndex encodes *runtime state*.
+    - Specs are designed to be stable, inspectable configuration objects that
+      can be versioned and reviewed as part of phenotype or ETL definitions.
+    - Normalisation and correction policies are intentionally split between
+      build-time (this spec) and runtime (ConceptResolver) to make lookup
+      behaviour explicit and testable.
+    """
+    name: str
+    unknown: int | None = 0
+    domain_id: str | None = None
+    concept_class_id: list[str] | None = None
+    vocabulary_id: list[str] | None = None
+    standard_only: bool = True
+    code_filter: str | None = None
+    parents: list[int] | None = None
+    include_non_standard_descendants: bool = False
+    include_synonyms: bool = False
+    normalizer: Normaliser = normalize_default
+    include: tuple[str, ...] = ("concept_name", "concept_code")  # index fields
+
 
 class OMOPConceptSource:
     """
     Concrete ConceptSource backed by OMOP CDM vocabulary tables.
 
-    This class:
-    - performs NO caching
-    - performs NO normalisation
-    - performs NO lookup logic
-
     It is a thin, explicit adapter between SQLAlchemy + OMOP CDM
     and higher-level vocabulary indexing logic.
+
+
+    Used exclusively to builds a query based on provided parameters (adds  
+    filter for each non-None parameter, and joins to Concept_Ancestor 
+    if parents are specified).
     """
 
     @staticmethod
@@ -66,7 +190,6 @@ class OMOPConceptSource:
         1. Flat filtering by domain / class / vocabulary
         2. Hierarchical expansion from parent concept(s)
 
-        The semantics are explicit and intentionally conservative.
         """
 
         q = session.query(Concept)
@@ -77,33 +200,20 @@ class OMOPConceptSource:
                     Concept_Ancestor,
                     Concept_Ancestor.descendant_concept_id == Concept.concept_id,
                 )
-                .filter(
-                    Concept_Ancestor.ancestor_concept_id.in_(parents)
-                )
+                .filter(Concept_Ancestor.ancestor_concept_id.in_(parents))
             )
-
             if standard_only and not include_non_standard_descendants:
                 q = q.filter(Concept.standard_concept == "S")
-            
         if domain_id:
             q = q.filter(Concept.domain_id == domain_id)
-
         if concept_class_id:
-            q = q.filter(
-                Concept.concept_class_id.in_(list(concept_class_id))
-            )
-
+            q = q.filter(Concept.concept_class_id.in_(list(concept_class_id)))
         if vocabulary_id:
-            q = q.filter(
-                Concept.vocabulary_id.in_(list(vocabulary_id))
-            )
+            q = q.filter(Concept.vocabulary_id.in_(list(vocabulary_id)))
         if standard_only and not parents:
             q = q.filter(Concept.standard_concept == "S")
-
         if code_filter:
-            q = q.filter(
-                Concept.concept_code.ilike(f"%{code_filter}%")
-            )
+            q = q.filter(Concept.concept_code.ilike(f"%{code_filter}%"))
         rows = q.all()
         return [
             ConceptRow(
@@ -133,8 +243,12 @@ class OMOPConceptSource:
         )
         return list({r.concept_id for r in rows})
     
-class LookupBuilder:
-    def build(self, session: so.Session, spec: LookupSpec) -> LookupIndex:
+
+    @staticmethod
+    def build_lookup(
+        session: so.Session,
+        spec: LookupSpec,
+    ) -> LookupIndex:
         rows = OMOPConceptSource.fetch_concepts(
             session,
             domain_id=spec.domain_id,
@@ -161,9 +275,63 @@ class LookupBuilder:
                     m[spec.normalizer(syn)] = cid
 
         return LookupIndex(name=spec.name, unknown=spec.unknown, mapping=m)
-
+    
 
 class ConceptResolver:
+
+    """
+    Runtime resolver for mapping free-text terms to OMOP concept IDs.
+
+    A ConceptResolver wraps a pre-built LookupIndex and applies runtime
+    normalisation and optional correction passes to resolve arbitrary
+    input strings to concept IDs. It is intentionally lightweight and
+    stateless: all semantic scope and vocabulary constraints are encoded
+    upstream in the LookupSpec and LookupIndex.
+
+    Resolution proceeds in ordered stages:
+    1. Apply the primary normaliser to the input term and attempt a direct lookup.
+    2. If no hit is found, apply each correction function in turn, re-normalise,
+       and retry the lookup.
+    3. If no match is found, return the configured ``unknown`` concept ID.
+
+    This design allows simple, explicit handling of common data quality issues
+    (e.g. formatting differences, legacy codes, mild normalisation errors)
+    without introducing fuzzy matching, probabilistic scoring, or hidden
+    inference logic.
+
+    Parameters
+    ----------
+    index:
+        Pre-built LookupIndex providing the normalised key → concept_id mapping.
+    normalizer:
+        Optional normalisation function applied to input terms at lookup time.
+        Defaults to ``normalize_default``. This should be compatible with the
+        normaliser used when constructing the LookupIndex.
+    corrections:
+        Optional ordered list of correction functions applied to the raw input
+        term prior to normalisation and lookup. Each correction is tried in
+        sequence until a match is found.
+
+    Notes
+    -----
+    - ConceptResolver performs no database access and no dynamic expansion of
+      vocabularies; it operates over the materialised LookupIndex.
+    - Resolution is deterministic and transparent: there is no fuzzy matching,
+      ranking, or probabilistic inference.
+    - Correction functions are applied conservatively and in-order; later
+      corrections do not override earlier successful matches.
+    - ``lookup_exact`` bypasses correction passes and performs a single
+      normalised lookup, which is useful for validation and debugging.
+
+    Examples
+    --------
+    >>> resolver = ConceptResolver(index)
+    >>> resolver.lookup("Stage III")
+    123456
+    >>> resolver.lookup("stage-3")
+    123456
+
+    """
     def __init__(
         self,
         index: LookupIndex,
@@ -207,3 +375,96 @@ class ConceptResolver:
     @property
     def all_concepts(self) -> set[int]:
         return set(self.index.mapping.values())
+
+def make_concept_resolver(
+    session: so.Session,
+    *,
+    name: str,
+    unknown: int | None = 0,
+    domain_id: str | None = None,
+    concept_class_id: list[str] | None = None,
+    vocabulary_id: list[str] | None = None,
+    standard_only: bool = True,
+    code_filter: str | None = None,
+    parents: list[int] | None = None,
+    include_non_standard_descendants: bool = False,
+    include_synonyms: bool = False,
+    include: tuple[str, ...] = ("concept_name", "concept_code"),
+    build_normalizer: Normaliser = normalize_default,
+    runtime_normalizer: Normaliser | None = None,
+    corrections: list[Callable[[str], str]] | None = None,
+) -> ConceptResolver:
+    """
+    Convenience factory for constructing a ConceptResolver from declarative inputs.
+
+    This function bundles the common workflow of:
+    - defining a LookupSpec
+    - materialising a LookupIndex from OMOP
+    - constructing a ConceptResolver for runtime use
+
+    Parameters
+    ----------
+    session:
+        Active SQLAlchemy session connected to the OMOP CDM database.
+    name:
+        Stable identifier for this lookup specification, used in logging and debugging.
+    unknown:
+        Concept ID to return for unmatched terms. Set to None to preserve nulls, or to 
+        a sentinel concept ID to force closed-world behaviour.
+    domain_id:
+        Optional OMOP domain filter for the concepts to include in the lookup.
+    concept_class_id:
+        Optional list of OMOP concept_class_id values to restrict the lookup.
+    vocabulary_id:
+        Optional list of OMOP vocabulary_id values to restrict the lookup.
+    standard_only:
+        If True, restricts the lookup to standard concepts only.
+    code_filter:
+        Optional substring filter applied to concept_code (ILIKE-based). 
+        Useful for coarse scoping (e.g. AJCC-only codes).
+    parents:
+        Optional list of ancestor concept IDs from which to expand the lookup 
+        via the Concept_Ancestor table.
+    include_non_standard_descendants:
+        If True, includes non-standard concepts when expanding from parents. Has no 
+        effect if `parents` is None.
+    include_synonyms:
+        If True, include Concept_Synonym entries in the lookup keys.
+    include:
+        Tuple of ConceptRow attribute names to index as keys (e.g. ("concept_name", 
+        "concept_code")). This controls which textual fields become resolvable inputs.
+    build_normalizer:
+        Normalisation function applied to all indexed strings at build time. This should  
+        match (or be compatible with) the normaliser used at resolution time by 
+        ConceptResolver.
+    runtime_normalizer:
+        Optional normalisation function applied to input terms at lookup time. Defaults to 
+        ``normalize_default``. This should be compatible with the normaliser used when 
+        constructing the LookupIndex.
+    corrections:
+        Optional ordered list of correction functions applied to the raw input term prior 
+        to normalisation and lookup
+    """
+
+    spec = LookupSpec(
+        name=name,
+        unknown=unknown,
+        domain_id=domain_id,
+        concept_class_id=concept_class_id,
+        vocabulary_id=vocabulary_id,
+        standard_only=standard_only,
+        code_filter=code_filter,
+        parents=parents,
+        include_non_standard_descendants=include_non_standard_descendants,
+        include_synonyms=include_synonyms,
+        normalizer=build_normalizer,
+        include=include,
+    )
+
+    index = OMOPConceptSource.build_lookup(session, spec)
+
+    return ConceptResolver(
+        index,
+        normalizer=runtime_normalizer or build_normalizer,
+        corrections=corrections,
+    )
