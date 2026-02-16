@@ -58,6 +58,14 @@ class LookupIndex:
         if isinstance(item, int):
             return item in self.mapping.values()
         return False
+    
+    def __repr__(self) -> str:
+        return (
+            f"<LookupIndex name={self.name!r} "
+            f"keys={len(self.mapping)} "
+            f"concepts={len(self.all_concepts)} "
+            f"unknown={self.unknown}>"
+        )
 
     @property
     def all_concepts(self) -> set[int]:
@@ -375,6 +383,15 @@ class ConceptResolver:
     @property
     def all_concepts(self) -> set[int]:
         return set(self.index.mapping.values())
+    
+
+    def __repr__(self) -> str:
+        return (
+            f"<ConceptResolver name={self.index.name!r} "
+            f"concepts={len(self.all_concepts)} "
+            f"corrections={len(self._corrections)}>"
+        )
+
 
 def make_concept_resolver(
     session: so.Session,

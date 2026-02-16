@@ -63,3 +63,6 @@
 
 ## 0.5.10
 - added concept resolution registry
+
+## 0.5.11
+- updated concept resolution builder pattern

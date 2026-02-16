@@ -17,24 +17,46 @@ class ConceptResolverRegistry:
     def __init__(self, engine: sa.Engine):
         self.engine = engine
         self._cache: dict[str, ConceptResolver] = {}
+        self._builders: dict[str, Callable[[so.Session], ConceptResolver]] = {}
 
-    def get(self, name: str, builder: Callable[[so.Session], ConceptResolver]) -> ConceptResolver:
+    
+    def register(self, name: str, builder: Callable[[so.Session], ConceptResolver]) -> None:
         """
-        Return a cached resolver by name, building it if required.
+        Register a named resolver builder.
 
-        Parameters
-        ----------
-        name:
-            Stable key identifying this resolver (e.g. "tnm_t_stage").
-        builder:
-            Callable that constructs the resolver given a Session.
-            This is only invoked on first access.
+        This does not construct the resolver immediately; it only records
+        how to build it when first requested.
+        """
+        if name in self._builders:
+            raise KeyError(f"Resolver '{name}' is already registered")
+
+        self._builders[name] = builder
+
+    def get(self, name: str) -> ConceptResolver:
+        """
+        Return a cached resolver by name, building it lazily if required.
+
+        The resolver must have been registered via ``register``.
         """
         if name in self._cache:
             return self._cache[name]
+
+        if name not in self._builders:
+            raise KeyError(
+                f"No resolver named '{name}' is registered. "
+                f"Available resolvers: {sorted(self._builders)}"
+            )
+
+        builder = self._builders[name]
 
         with so.Session(self.engine) as session:
             resolver = builder(session)
 
         self._cache[name] = resolver
         return resolver
+
+    def __getitem__(self, name: str) -> ConceptResolver:
+        return self.get(name)
+
+    def __contains__(self, name: str) -> bool:
+        return name in self._builders
