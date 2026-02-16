@@ -60,3 +60,6 @@
 ## 0.5.9
 - refactoring vocabulary mapping lookups
 - added typers for cdm type hinting
+
+## 0.5.10
+- added concept resolution registry
