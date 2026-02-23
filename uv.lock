@@ -853,7 +853,7 @@ wheels = [
 
 [[package]]
 name = "omop-alchemy"
-version = "0.5.11"
+version = "0.5.12"
 source = { editable = "." }
 dependencies = [
     { name = "orm-loader" },
@@ -890,7 +890,7 @@ requires-dist = [
     { name = "mkdocstrings-python", marker = "extra == 'dev'", specifier = ">=2.0.1" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8" },
     { name = "myst-parser", marker = "extra == 'docs'" },
-    { name = "orm-loader", specifier = ">=0.3.14" },
+    { name = "orm-loader", specifier = ">=0.3.22" },
     { name = "pandas", specifier = ">=2.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0" },
@@ -905,17 +905,18 @@ provides-extras = ["dev", "docs"]
 
 [[package]]
 name = "orm-loader"
-version = "0.3.14"
+version = "0.3.22"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "chardet" },
     { name = "pandas" },
     { name = "pyarrow" },
     { name = "sqlalchemy" },
+    { name = "sqlalchemy-utils" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/75/47/5c071dc9e38234f8b34dc8ef723bffba19ee86ac46431dd8a02299d73442/orm_loader-0.3.14.tar.gz", hash = "sha256:40012e91e31a6d168db4f432eed0506e0d3ffa1c1d810cf560ccd615aa3912da", size = 30023, upload-time = "2026-02-06T00:42:00.334Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d8/d8/3fe9fc8d6d264f7d9e772a5847ab8dc0f5eb869e0823d67bcc9567cf97f3/orm_loader-0.3.22.tar.gz", hash = "sha256:72c0d0b8c798c07cdca1468a815f78120e8e5afa02914ee2b53452c573b4d55a", size = 31662, upload-time = "2026-02-19T05:23:47.893Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3d/64/edbc2d86d9b5d1b020b93c83bb4525734e52d8cbf468caac7381473e7867/orm_loader-0.3.14-py3-none-any.whl", hash = "sha256:68887ff074613e5529f121240758c5fb6b00941ec24259cbe6df8d4deca8a392", size = 41364, upload-time = "2026-02-06T00:41:59.194Z" },
+    { url = "https://files.pythonhosted.org/packages/13/2e/2cae413c8e6b235acbff96c04ceb1045c1ffe33566acab37bb1f723d0202/orm_loader-0.3.22-py3-none-any.whl", hash = "sha256:cd5e4c5f8c636695f61b5738590857905459003dce29c7eb4ca436a6256ec8ac", size = 43454, upload-time = "2026-02-19T05:23:45.043Z" },
 ]
 
 [[package]]
@@ -1470,6 +1471,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/42/39/f05f0ed54d451156bbed0e23eb0516bcad7cbb9f18b3bf219c786371b3f0/sqlalchemy-2.0.45-cp314-cp314t-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:cd337d3526ec5298f67d6a30bbbe4ed7e5e68862f0bf6dd21d289f8d37b7d60b", size = 3522029, upload-time = "2025-12-09T22:13:32.09Z" },
     { url = "https://files.pythonhosted.org/packages/54/0f/d15398b98b65c2bce288d5ee3f7d0a81f77ab89d9456994d5c7cc8b2a9db/sqlalchemy-2.0.45-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:9a62b446b7d86a3909abbcd1cd3cc550a832f99c2bc37c5b22e1925438b9367b", size = 3475142, upload-time = "2025-12-09T22:13:33.739Z" },
     { url = "https://files.pythonhosted.org/packages/bf/e1/3ccb13c643399d22289c6a9786c1a91e3dcbb68bce4beb44926ac2c557bf/sqlalchemy-2.0.45-py3-none-any.whl", hash = "sha256:5225a288e4c8cc2308dbdd874edad6e7d0fd38eac1e9e5f23503425c8eee20d0", size = 1936672, upload-time = "2025-12-09T21:54:52.608Z" },
+]
+
+[[package]]
+name = "sqlalchemy-utils"
+version = "0.42.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "sqlalchemy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/0f/7d/eb9565b6a49426552a5bf5c57e7c239c506dc0e4e5315aec6d1e8241dc7c/sqlalchemy_utils-0.42.1.tar.gz", hash = "sha256:881f9cd9e5044dc8f827bccb0425ce2e55490ce44fc0bb848c55cc8ee44cc02e", size = 130789, upload-time = "2025-12-13T03:14:13.591Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7c/25/7400c18c3ee97914cc99c90007795c00a4ec5b60c853b49db7ba24d11179/sqlalchemy_utils-0.42.1-py3-none-any.whl", hash = "sha256:243cfe1b3a1dae3c74118ae633f1d1e0ed8c787387bc33e556e37c990594ac80", size = 91761, upload-time = "2025-12-13T03:14:15.014Z" },
 ]
 
 [[package]]

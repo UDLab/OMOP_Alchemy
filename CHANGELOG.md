@@ -66,3 +66,6 @@
 
 ## 0.5.11
 - updated concept resolution builder pattern
+
+## 0.5.12
+- created visit_occurrence view object to handle 'visits where a provider of specialty [x] was seen' (whether through visit provider, procedure provider, obs provider relationships)

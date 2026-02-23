@@ -88,7 +88,7 @@ def test_concept_loaded(db_session, athena_vocab):
     concept = db_session.get(Concept, 1)
     assert concept is not None
     assert concept.concept_name == "Domain"
-    assert concept.domain_id == "Metadata"
+    assert concept.domain_id == "Metadata"  
 
 def test_concept_ancestor(db_session, athena_vocab):
     ancestors = (

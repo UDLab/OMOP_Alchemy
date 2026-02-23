@@ -1,17 +1,30 @@
 import sqlalchemy as sa
 import sqlalchemy.orm as so
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from datetime import date
+from sqlalchemy.ext.declarative import declared_attr
+from sqlalchemy.ext.hybrid import hybrid_method
+from sqlalchemy.orm.exc import DetachedInstanceError
 
 from orm_loader.helpers import Base
 from omop_alchemy.cdm.base import (
     cdm_table,
     CDMTableBase,
-    required_int,
-    optional_int,
+    ReferenceContext,
     required_concept_fk,
-    optional_concept_fk,
+    optional_concept_fk,    
+    DomainValidationMixin,
+    ExpectedDomain,
+
 )
+if TYPE_CHECKING:
+    from ..clinical.person import Person
+    from ..health_system.care_site import Care_Site
+
+from ..clinical.procedure_occurrence import Procedure_Occurrence
+from ..vocabulary.concept import Concept
+from ..health_system.provider import Provider
+
 
 @cdm_table
 class Visit_Occurrence(CDMTableBase, Base):
@@ -41,3 +54,75 @@ class Visit_Occurrence(CDMTableBase, Base):
 
     def __repr__(self) -> str:
         return f"<VisitOccurrence {self.visit_occurrence_id}>"
+
+
+class VisitContext(ReferenceContext):
+    person: so.Mapped["Person"] = ReferenceContext._reference_relationship(target="Person", local_fk="person_id", remote_pk="person_id",)  # type: ignore[assignment]
+    provider: so.Mapped["Provider"] = ReferenceContext._reference_relationship(target="Provider",local_fk="provider_id",remote_pk="provider_id",)  # type: ignore[assignment]
+    care_site: so.Mapped["Care_Site"] = ReferenceContext._reference_relationship(target="Care_Site",local_fk="care_site_id",remote_pk="care_site_id",)  # type: ignore[assignment]
+
+    @declared_attr
+    def procedure_providers(cls) -> so.Mapped[list["Provider"]]:
+        return so.relationship(
+            "Provider",
+            secondary="procedure_occurrence",
+            primaryjoin="Visit_Occurrence.visit_occurrence_id == Procedure_Occurrence.visit_occurrence_id",
+            secondaryjoin="Provider.provider_id == Procedure_Occurrence.provider_id",
+            viewonly=True,
+            lazy="selectin",
+        )
+
+    @declared_attr
+    def observation_providers(cls) -> so.Mapped[list["Provider"]]:
+        return so.relationship(
+            "Provider",
+            secondary="observation",
+            primaryjoin="Visit_Occurrence.visit_occurrence_id == Observation.visit_occurrence_id",
+            secondaryjoin="Provider.provider_id == Observation.provider_id",
+            viewonly=True,
+            lazy="selectin",
+        )
+
+class VisitView(Visit_Occurrence, VisitContext, DomainValidationMixin):
+    __tablename__ = "visit_occurrence"
+    __mapper_args__ = {"concrete": False}
+    __expected_domains__ = {
+        "visit_concept_id": ExpectedDomain("Visit"),
+        "visit_type_concept_id": ExpectedDomain("Type Concept"),
+        "admitted_from_concept_id": ExpectedDomain("Visit"),
+        "discharged_to_concept_id": ExpectedDomain("Visit"),
+    }
+
+    @property
+    def all_providers(self) -> set["Provider"]:
+        providers = set()
+        providers.update(getattr(self, "procedure_providers", []) or [])
+        providers.update(getattr(self, "observation_providers", []) or [])
+        if self.provider is not None:
+            providers.add(self.provider)
+        return providers
+    
+
+    @hybrid_method
+    def has_provider_specialty(self, specialty_concept_id: int) -> bool: 
+        for p in self.all_providers:
+            try:
+                if p.specialty_source_concept_id == specialty_concept_id:
+                    return True
+            except DetachedInstanceError:
+                pass
+        return False
+
+    @has_provider_specialty.expression
+    @classmethod
+    def _has_provider_specialty(cls, specialty_concept_id: int) -> sa.sql.expression.ColumnElement[bool]:  
+        return sa.exists().where(
+            sa.and_(
+                Provider.provider_id.in_(
+                    sa.select(Procedure_Occurrence.provider_id).where(
+                        Procedure_Occurrence.visit_occurrence_id == cls.visit_occurrence_id
+                    )
+                ),
+                Provider.specialty_source_concept_id == specialty_concept_id,
+            )
+        )

@@ -147,19 +147,21 @@ class PersonView(Person, PersonContext, DomainValidationMixin):
         return f"<Person {pid}: {gender_code}({age_str})>"
     
     @hybrid_property
-    def is_deceased(self) -> bool: # type: ignore
+    def is_deceased(self) -> bool: 
         return hasattr(self, "death") and self.death is not None
 
     @is_deceased.expression
-    def is_deceased(cls):
+    @classmethod
+    def _is_deceased(cls):
         return sa.exists().where(Death.person_id == cls.person_id)
     
     @hybrid_property
-    def has_observation_period(self) -> bool: # type: ignore
+    def has_observation_period(self) -> bool: 
         return hasattr(self, "observation_periods") and bool(self.observation_periods)
 
     @has_observation_period.expression
-    def has_observation_period(cls):
+    @classmethod
+    def _has_observation_period(cls):
         return sa.exists().where(
             Observation_Period.person_id == cls.person_id
         )
@@ -177,40 +179,41 @@ class PersonView(Person, PersonContext, DomainValidationMixin):
         return "65+"
 
     @hybrid_property
-    def first_observation_date(self) -> date | None: # type: ignore
+    def first_observation_date(self) -> date | None: 
         if not getattr(self, "observation_periods", None):
             return None
         starts = [op.observation_period_start_date for op in self.observation_periods if op is not None]
         return min(starts) if starts else None
 
     @first_observation_date.expression
-    def first_observation_date(cls):
+    @classmethod
+    def _first_observation_date(cls):
         return (
             sa.select(sa.func.min(Observation_Period.observation_period_start_date))
             .where(Observation_Period.person_id == cls.person_id)
-            .correlate(cls) # type: ignore
+            .correlate(cls) 
             .scalar_subquery()
         )
 
     @hybrid_property
-    def last_observation_date(self) -> date | None: # type: ignore
+    def last_observation_date(self) -> date | None: 
         if not getattr(self, "observation_periods", None):
             return None
         ends = [op.observation_period_end_date for op in self.observation_periods if op is not None]
         return max(ends) if ends else None
 
     @last_observation_date.expression
-    def last_observation_date(cls):
+    @classmethod
+    def _last_observation_date(cls):
         return (
             sa.select(sa.func.max(Observation_Period.observation_period_end_date))
             .where(Observation_Period.person_id == cls.person_id)
-            .correlate(cls) # type: ignore
+            .correlate(cls) 
             .scalar_subquery()
         )
     
-
     @hybrid_method
-    def under_observation_on(self, on_date: date) -> bool: # type: ignore
+    def under_observation_on(self, on_date: date) -> bool: 
         if not getattr(self, "observation_periods", None):
             return False
         return any(
@@ -219,7 +222,8 @@ class PersonView(Person, PersonContext, DomainValidationMixin):
         )
 
     @under_observation_on.expression
-    def under_observation_on(cls, on_date):
+    @classmethod
+    def _under_observation_on(cls, on_date):
         return sa.exists().where(
             sa.and_(
                 Observation_Period.person_id == cls.person_id,

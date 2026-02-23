@@ -13,4 +13,4 @@ class Concept_Relationship(ReferenceTable, CDMTableBase, Base):
     relationship_id: so.Mapped[str] = so.mapped_column(sa.ForeignKey("relationship.relationship_id"),primary_key=True)
     valid_start_date: so.Mapped[date] = so.mapped_column(nullable=False)
     valid_end_date: so.Mapped[date] = so.mapped_column(nullable=False)
-    invalid_reason: so.Mapped[Optional[str]] = so.mapped_column(sa.String(1))
+    invalid_reason: so.Mapped[Optional[str]] = so.mapped_column(sa.String(1), nullable=True)

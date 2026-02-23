@@ -26,12 +26,12 @@ class Source_To_Concept_Map(
     source_code: so.Mapped[str] = so.mapped_column(sa.String(50),primary_key=True)
     source_concept_id: so.Mapped[int] = so.mapped_column(sa.Integer,primary_key=True,doc="0 or >= 2,000,000,000 for site-specific concepts")
     source_vocabulary_id: so.Mapped[str] = so.mapped_column(sa.String(20),primary_key=True)
-    source_code_description: so.Mapped[Optional[str]] = so.mapped_column(sa.String(255))
+    source_code_description: so.Mapped[Optional[str]] = so.mapped_column(sa.String(255), nullable=True)
     target_concept_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey("concept.concept_id"),nullable=False,index=True)
     target_vocabulary_id: so.Mapped[str] = so.mapped_column(sa.ForeignKey("vocabulary.vocabulary_id"),nullable=False)
     valid_start_date: so.Mapped[date] = so.mapped_column(nullable=False)
     valid_end_date: so.Mapped[date] = so.mapped_column(nullable=False)
-    invalid_reason: so.Mapped[Optional[str]] = so.mapped_column(sa.String(1))
+    invalid_reason: so.Mapped[Optional[str]] = so.mapped_column(sa.String(1), nullable=True)
 
     @classmethod
     def extra_validate(cls) -> list[ValidationIssue]:
